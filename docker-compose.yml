@@ -1,0 +1,82 @@
+name: postgres
+
+configs:
+  pgadmin_servers:
+    content: |
+      {
+        "Servers": {
+          "1": {
+            "Name": "postgres",
+            "Group": "Servers",
+            "Host": "postgres",
+            "Port": 5432,
+            "MaintenanceDB": "postgres",
+            "Username": "${PG_USER}",
+            "SSLMode": "prefer"
+          },
+          "2": {
+            "Name": "pgvector",
+            "Group": "Servers",
+            "Host": "pgvector",
+            "Port": 5432,
+            "MaintenanceDB": "postgres",
+            "Username": "${PG_USER}",
+            "SSLMode": "prefer"
+          }
+        }
+      }
+
+services:
+  postgres:
+    image: postgres:18.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql
+    networks:
+      - dbnet
+
+  pgvector:
+    image: pgvector/pgvector:0.8.6-pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - pgv_data:/var/lib/postgresql
+      - ./init/pgvector/01-enable-vector.sql:/docker-entrypoint-initdb.d/01-enable-vector.sql:ro
+    networks:
+      - dbnet
+
+  pgadmin:
+    image: dpage/pgadmin4:9.16
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_LISTEN_PORT: "80"
+    ports:
+      - "127.0.0.1:8888:80"
+    configs:
+      - source: pgadmin_servers
+        target: /pgadmin4/servers.json
+        mode: "0444"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - dbnet
+
+volumes:
+  pg_data:
+  pgv_data:
+  pgadmin_data:
+
+networks:
+  dbnet:
+    driver: bridge
