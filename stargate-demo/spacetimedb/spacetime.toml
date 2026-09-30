@@ -1,0 +1,4 @@
+[project]
+name = "stargate-demo"
+server = "local"
+database = "stargate-demo"

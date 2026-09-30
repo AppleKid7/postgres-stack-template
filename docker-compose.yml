@@ -72,10 +72,37 @@ services:
     networks:
       - dbnet
 
+  spacetimedb:
+    image: clockworklabs/spacetime:v2.10.2
+    restart: unless-stopped
+    command: ["start", "--listen-addr", "0.0.0.0:3333"]
+    ports:
+      - "127.0.0.1:3333:3333"
+    volumes:
+      - spacetimedb_data:/var/lib/spacetime/data
+    networks:
+      - dbnet
+
+  stargate:
+    build:
+      context: ./stargate
+    restart: unless-stopped
+    environment:
+      CUSTOM_USER: ${STARGATE_USER}
+      PASSWORD: ${STARGATE_PASSWORD}
+    ports:
+      - "127.0.0.1:8889:3000"
+    volumes:
+      - stargate_config:/config
+    networks:
+      - dbnet
+
 volumes:
   pg_data:
   pgv_data:
   pgadmin_data:
+  spacetimedb_data:
+  stargate_config:
 
 networks:
   dbnet:
